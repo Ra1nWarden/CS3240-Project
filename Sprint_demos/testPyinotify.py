@@ -9,10 +9,10 @@ mask = EventsCodes.IN_DELETE | EventsCodes.IN_CREATE
 
 class PTmp(ProcessEvent):
     def process_IN_CREATE(self, event):
-        print "Create: %s" % os.path.join(event.path, event.name)
+        print 'Create: %s' % os.path.join(event.path, event.name)
 
     def process_IN_DELETE(self, event):
-        print "Remove: %s" % os.path.join(event.path, event.name)
+        print 'Remove: %s' % os.path.join(event.path, event.name)
 
 notifier = Notifier(wm, PTmp())
 wdd = wm.add_watch('/tmp', mask, rec=True)
