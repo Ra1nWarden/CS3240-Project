@@ -8,26 +8,23 @@ from watchdog.events import FileSystemEventHandler
 class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
         create_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print create_time, event.event_type, event.src_path
-        """if event.is_directory:
+        if event.is_directory:
             print create_time, event.event_type, event.src_path
         else:
             print create_time, event.event_type, event.src_path
-"""
+
     def on_deleted(self, event):
         delete_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print delete_time, event.event_type, event.src_path
-        """if event.is_directory:
+        if event.is_directory:
             print delete_time, event.event_type, event.src_path
         else:
             print delete_time, event.event_type, event.src_path
-"""
+
     def on_modified(self, event):
         modify_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print modify_time, event.event_type, event.src_path
-        """if not event.is_directory:
+        if not event.is_directory:
             print modify_time, event.event_type, event.src_path
-"""
+
     def on_moved(self, event):
         move_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print move_time, "moved from", event.src_path, "to", event.dest_path
