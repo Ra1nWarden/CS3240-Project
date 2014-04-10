@@ -28,8 +28,11 @@ class MyHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         modify_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        if not event.is_directory:
+        if event.is_directory:
             print modify_time, event.event_type, event.src_path
+        else:
+            uploadFile = {'file': open(event.src_path, 'rw')}
+            upload(uploadFile)
 
     def on_moved(self, event):
         move_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
