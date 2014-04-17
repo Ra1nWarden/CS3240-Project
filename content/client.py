@@ -49,7 +49,6 @@ def download(ufile):
     filename = "./" + sys.argv[1] + filename
     with open(filename, 'wb') as fw:
         for chunk in r.iter_content(128):
-            print chunk
             fw.write(chunk)
     
 def removeFile(fname):

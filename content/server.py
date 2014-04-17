@@ -3,7 +3,7 @@ from flask import Flask, request, redirect, url_for, jsonify, send_file
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = '/Users/zihaowang/test/'
+app.config['UPLOAD_FOLDER'] = '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 3240/CS3240-Project/server_folder/'
 
 @app.route('/', methods=['GET', 'POST', 'DELETE'])
 def sync_file():
@@ -18,7 +18,6 @@ def sync_file():
         return make_response()
     if request.method == 'GET':
         filename = os.path.join(app.config['UPLOAD_FOLDER'], request.args['file'])
-        print filename
         resp = send_file(filename, as_attachment=True)
         return resp
 
