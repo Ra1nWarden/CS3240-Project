@@ -42,6 +42,15 @@ class MyHandler(FileSystemEventHandler):
 
 def upload(ufile):
     r = requests.post(address, files=ufile)
+
+def download(ufile):
+    r = requests.get(address, params=ufile)
+    filename = r.headers['content-disposition'].rsplit('filename=')[-1]
+    filename = "./" + sys.argv[1] + filename
+    with open(filename, 'wb') as fw:
+        for chunk in r.iter_content(128):
+            print chunk
+            fw.write(chunk)
     
 def removeFile(fname):
     r = requests.delete(address, params=fname)
@@ -50,10 +59,21 @@ def sync():
     fnames = os.listdir("./test_dir/")
     file_info = {}
     for each in fnames:
-        file_info[each] = os.path.getmtime(each) 
+        file_info[each] = os.path.getmtime(os.path.join("./test_dir/", each)) 
     r = requests.get(address + "/query", params=file_info)
-    print r.json()["download"]
-    print r.json()["upload"]
+    tobeupload = r.json()["upload"]
+    tobedownload = r.json()["download"]
+    print tobeupload
+    print tobedownload
+    for each in tobeupload:
+        if each == "DS_Store":
+            continue
+        file_dir = "./" + sys.argv[1] + each
+        uploadFile = {'file': open(file_dir, 'rw')}
+        upload(uploadFile)
+    for each in tobedownload:
+        filedownload = {'file': each}
+        download(filedownload)
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else '.'

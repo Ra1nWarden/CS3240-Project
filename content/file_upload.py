@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, redirect, url_for, jsonify
+from flask import Flask, request, redirect, url_for, jsonify, send_file
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -11,9 +11,16 @@ def sync_file():
         file = request.files['file']
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return make_response()
     if request.method == 'DELETE':
         filename = request.args['file']
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return make_response()
+    if request.method == 'GET':
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], request.args['file'])
+        print filename
+        resp = send_file(filename, as_attachment=True)
+        return resp
 
 @app.route('/query', methods=['GET'])
 def respond_requests():
@@ -37,7 +44,6 @@ def respond_requests():
             if not each in file_info:
                 downloadneed.append(each)
         resp = jsonify(upload=uploadneed, download=downloadneed)
-        print resp.data
         return resp
 
 if __name__ == '__main__':
