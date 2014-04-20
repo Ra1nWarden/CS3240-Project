@@ -1,6 +1,11 @@
 import pynotify
 import gtk
 import appindicator
+import thread
+import threading
+import time
+from client import Watcher
+from client import sync
 
 class ErrorMessage:
     def delete_event(self, widget, event, data=None):
@@ -96,7 +101,8 @@ class LoginWindow:
 
 class Application:
     def check_match(self, user, key):
-        return False
+        # to be filled up with log in code
+        return True
     def login_pop(self, widget, data=None):
         self.popwindow.show()
     def log_out(self, widget, data=None):
@@ -105,6 +111,8 @@ class Application:
         self.logouti.hide()
         self.login = False
         self.username = None
+    def get_sync_path(self):
+        return self.watcher.path
     def check_info(self, widget, data=None):
         entered_username = self.popwindow.username
         entered_password = self.popwindow.password
@@ -118,7 +126,14 @@ class Application:
             self.errorMsg.show()
         return True
     def quit_app(self, widget, data=None):
+        self.running = False
         gtk.main_quit()
+    def switch_toggle(self, widget, data=None):
+        self.syncswitch = widget.get_active()
+        if self.syncswitch:
+            self.watcher.start_watching()
+        else:
+            self.watcher.pause_watching()
     def __init__(self):
         self.indicator = appindicator.Indicator('oneDir', '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 3240/CS3240-Project/content/icons/icon.ico', appindicator.CATEGORY_APPLICATION_STATUS)
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
@@ -127,12 +142,14 @@ class Application:
         self.quiti = gtk.MenuItem('Quit')
         self.quiti.connect('activate', self.quit_app)
         self.switchi = gtk.CheckMenuItem('Sync')
+        self.switchi.connect('activate', self.switch_toggle)
         self.logini = gtk.MenuItem('Log in')
         self.logini.connect('activate', self.login_pop)
         self.logouti = gtk.MenuItem('Log out')
         self.logouti.connect('activate', self.log_out)
-        self.mainMenu.append(self.logini)
         self.mainMenu.append(self.switchi)
+        self.mainMenu.append(self.logini)
+        self.mainMenu.append(self.logouti)
         self.mainMenu.append(self.quiti)
         self.popwindow = LoginWindow()
         self.popwindow.submitbutton_connect(self.check_info)
@@ -140,12 +157,24 @@ class Application:
         self.quiti.show()
         self.logini.show()
         self.login = False
-        self.syncswitch = True
+        self.syncswitch = False
         self.username = None
+        self.running = True
+        self.watcher = Watcher("test_dir/")
 
-def main():
-    gtk.main()
+def syncing(app):
+    while True:
+        for i in range(0, 60):
+            if not app.running:
+                exit(0)
+            time.sleep(1)
+        if app.syncswitch:
+            sync(app.get_sync_path())
 
 if __name__ == "__main__":
     application = Application()
-    main()
+    gtk.gdk.threads_init()
+    gtk_thread = threading.Thread(target=gtk.main, args=())
+    gtk_thread.start()
+    sync_thread = threading.Thread(target=syncing, args=(application,))
+    sync_thread.start()

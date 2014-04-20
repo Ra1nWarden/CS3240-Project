@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, redirect, url_for, jsonify, send_file
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 3240/CS3240-Project/server_folder/'
@@ -9,7 +8,9 @@ app.config['UPLOAD_FOLDER'] = '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 
 def sync_file():
     if request.method == 'POST':
         file = request.files['file']
-        filename = secure_filename(file.filename)
+        filename = file.filename
+        print "in server post:"
+        print os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return make_response()
     if request.method == 'DELETE':
