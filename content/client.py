@@ -52,10 +52,10 @@ class MyHandler(FileSystemEventHandler):
 
 
 def upload(ufile):
-    r = requests.post(address, files=ufile)
+    r = requests.post(address + "/main", files=ufile)
 
 def download(ufile, dir):
-    r = requests.get(address, params=ufile)
+    r = requests.get(address + "/main", params=ufile)
     filename = r.headers['content-disposition'].rsplit('filename=')[-1]
     filename = "./" + dir + filename
     with open(filename, 'wb') as fw:
@@ -63,7 +63,24 @@ def download(ufile, dir):
             fw.write(chunk)
     
 def removeFile(fname):
-    r = requests.delete(address, params=fname)
+    r = requests.delete(address + "/main", params=fname)
+
+def authenticate(username, password):
+    arguments = {}
+    arguments['username'] = username
+    arguments['password'] = password
+    r = requests.post(address + "/login", params=arguments)
+    return r.json()['success']
+
+def register_user(username, password):
+    arguments = {}
+    arguments['username'] = username
+    arguments['password'] = password
+    r = requests.post(address + "/register", params=arguments)
+    return r.json()['success']
+
+def log_out():
+    r = requests.post(address + "/logout")
 
 def sync(dir):
     fnames = os.listdir("./test_dir/")

@@ -5,7 +5,7 @@ import thread
 import threading
 import time
 from client import Watcher
-from client import sync
+from client import sync, register_user, authenticate, log_out
 
 class ErrorMessage:
     def delete_event(self, widget, event, data=None):
@@ -16,19 +16,19 @@ class ErrorMessage:
         return True
     def show(self):
         self.window.show()
-    def __init__(self):
+    def __init__(self, msg):
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_size_request(200, 200)
-        self.window.set_title("Error")
+        self.window.set_title("Message")
         self.window.connect("delete_event", self.delete_event)
         
         rows = gtk.VBox(True, 5)
         self.window.add(rows)
         rows.show()
 
-        message = gtk.Label("Invalid username/password\n combination")
-        rows.pack_start(message, True, True, 0)
-        message.show()
+        self.message = gtk.Label(msg)
+        rows.pack_start(self.message, True, True, 0)
+        self.message.show()
 
         doneButton = gtk.Button("Done")
         doneButton.connect("clicked", self.done_event)
@@ -46,6 +46,17 @@ class LoginWindow:
         self.password = self.passwordentry.get_text()
         self.window.hide()
         return False
+
+    def register_new(self, widget, data=None):
+        username_entered = self.nameentry.get_text()
+        password_entered = self.passwordentry.get_text()
+        register_success = register_user(username_entered, password_entered)
+        if register_success:
+            success_msg = ErrorMessage("New user successfully \n registered!")
+            success_msg.show()
+        else:
+            fail_msg = ErrorMessage("Username in use! \n Please try again")
+            fail_msg.show()
 
     def submitbutton_connect(self, callback):
         self.submitbutton.connect("clicked", callback)
@@ -91,18 +102,24 @@ class LoginWindow:
         rows.pack_start(separator, True, True, 0)
         separator.show()
         
+        cols = gtk.HBox(True, 5)
+        cols.show()
         self.submitbutton = gtk.Button("Submit")
         self.submitbutton.connect("clicked", self.submit_info)
-        rows.pack_start(self.submitbutton, True, True, 0)
         self.submitbutton.show()
+        cols.pack_start(self.submitbutton, True, True, 0)
+        self.registerbutton = gtk.Button("Register")
+        self.registerbutton.connect("clicked", self.register_new)
+        self.registerbutton.show()
+        cols.pack_start(self.registerbutton, True, True, 0)
+        rows.pack_start(cols, True, True, 0)
 
         self.username = None
         self.password = None
 
 class Application:
     def check_match(self, user, key):
-        # to be filled up with log in code
-        return True
+        return authenticate(user, key)
     def login_pop(self, widget, data=None):
         self.popwindow.show()
     def log_out(self, widget, data=None):
@@ -138,7 +155,7 @@ class Application:
         self.indicator = appindicator.Indicator('oneDir', '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 3240/CS3240-Project/content/icons/icon.ico', appindicator.CATEGORY_APPLICATION_STATUS)
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
         self.mainMenu = gtk.Menu()
-        self.errorMsg = ErrorMessage()
+        self.errorMsg = ErrorMessage("Invalid password/username \n combination.")
         self.quiti = gtk.MenuItem('Quit')
         self.quiti.connect('activate', self.quit_app)
         self.switchi = gtk.CheckMenuItem('Sync')
