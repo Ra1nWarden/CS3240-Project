@@ -13,8 +13,8 @@ lm.init_app(app)
 
 class User(db.Model):
     __tablename__ = "users"
-    id = db.Column('user_id', db.Integer)
-    username = db.Column('username', db.String(20), primary_key=True, unique=True, index=True)
+    id = db.Column('user_id', db.Integer, primary_key=True)
+    username = db.Column('username', db.String(20), unique=True, index=True)
     password = db.Column('password', db.String(10))
     registered_on = db.Column('registered_on', db.DateTime)
 

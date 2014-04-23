@@ -128,6 +128,8 @@ class Application:
         self.logouti.hide()
         self.login = False
         self.username = None
+        self.switchi.set_active(False)
+        self.syncswitch = self.switchi.get_active()
     def get_sync_path(self):
         return self.watcher.path
     def check_info(self, widget, data=None):
