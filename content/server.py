@@ -33,7 +33,6 @@ class User(db.Model):
         return False
 
     def get_id(self):
-        print unicode(self.id)
         return unicode(self.id)
 
     def __repr__(self):
@@ -41,8 +40,12 @@ class User(db.Model):
 
 @lm.user_loader
 def load_user(id):
-    print "here in lm.user_loader"
     return User.query.get(int(id))
+
+@lm.request_loader
+def load_user_from_request(req):
+    username = req.args['username']
+    return User.query.filter_by(username=username).first()
 
 @app.before_request
 def before_request():
@@ -53,15 +56,17 @@ def sync_file():
     if request.method == 'POST':
         file = request.files['file']
         filename = file.filename
-        print os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        save_dir = server_root + g.user.username + '/'
+        file.save(os.path.join(save_dir, filename))
         return make_response()
     if request.method == 'DELETE':
         filename = request.args['file']
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        save_dir = server_root + g.user.username + '/'
+        os.remove(os.path.join(save_dir, filename))
         return make_response()
     if request.method == 'GET':
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], request.args['file'])
+        save_dir = server_root + g.user.username + '/'
+        filename = os.path.join(save_dir, request.args['file'])
         resp = send_file(filename, as_attachment=True)
         return resp
 
@@ -69,13 +74,17 @@ def sync_file():
 def respond_requests():
     if request.method == 'GET':
         file_info = request.args
-        server_files = os.listdir(app.config['UPLOAD_FOLDER'])
+        username = file_info['username']
+        save_dir = server_root + g.user.username + '/'
+        server_files = os.listdir(save_dir)
         server_info = {}
         for each in server_files:
-            server_info[each] = os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], each))
+            server_info[each] = os.path.getmtime(os.path.join(save_dir, each))
         uploadneed = []
         downloadneed = []
         for each in file_info:
+            if each == 'username':
+                continue
             if not each in server_info:
                 uploadneed.append(each)
             else:
@@ -112,15 +121,14 @@ def login():
     if registered_user is None:
         resp = jsonify(success=False)
         return resp
-    login_user(registered_user)
-    app.config['UPLOAD_FOLDER'] = server_root + username + '/'
+    login_user(registered_user, remember=True)
     resp = jsonify(success=True)
     return resp
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
-    app.config['UPLOAD_FOLDER'] = server_root
     resp = jsonify(success=True)
     return resp
 

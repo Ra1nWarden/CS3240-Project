@@ -51,10 +51,13 @@ class MyHandler(FileSystemEventHandler):
         print move_time, "moved from", event.src_path, "to", event.dest_path
 
 
-def upload(ufile):
-    r = requests.post(address + "/main", files=ufile)
+def upload(ufile, username):
+    args = {}
+    args['username'] = username
+    r = requests.post(address + "/main", files=ufile, params=args)
 
-def download(ufile, dir):
+def download(ufile, dir, username):
+    ufile['username'] = username
     r = requests.get(address + "/main", params=ufile)
     filename = r.headers['content-disposition'].rsplit('filename=')[-1]
     filename = "./" + dir + filename
@@ -62,7 +65,8 @@ def download(ufile, dir):
         for chunk in r.iter_content(128):
             fw.write(chunk)
     
-def removeFile(fname):
+def removeFile(fname, username):
+    fname['username'] = username
     r = requests.delete(address + "/main", params=fname)
 
 def authenticate(username, password):
@@ -82,23 +86,22 @@ def register_user(username, password):
 def log_out():
     r = requests.post(address + "/logout")
 
-def sync(dir):
+def sync(dir, username):
     fnames = os.listdir("./test_dir/")
     file_info = {}
     for each in fnames:
         file_info[each] = os.path.getmtime(os.path.join("./test_dir/", each)) 
+    file_info['username'] = username
     r = requests.get(address + "/query", params=file_info)
     tobeupload = r.json()["upload"]
     tobedownload = r.json()["download"]
-    print tobeupload
-    print tobedownload
     for each in tobeupload:
         file_dir = "./" + dir + each
         uploadFile = {'file': open(file_dir, 'rw')}
-        upload(uploadFile)
+        upload(uploadFile, username)
     for each in tobedownload:
         filedownload = {'file': each}
-        download(filedownload, dir)
+        download(filedownload, dir, username)
 
 class Watcher:
     def __init__(self, dir):
@@ -107,8 +110,8 @@ class Watcher:
         self.observer = Observer()
         self.observer.schedule(self.event_handler, self.path, recursive=True)
     
-    def start_watching(self):
-        sync(self.path)
+    def start_watching(self, username):
+        sync(self.path, username)
         self.observer.start()
 
     def pause_watching(self):

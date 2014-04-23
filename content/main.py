@@ -150,7 +150,7 @@ class Application:
     def switch_toggle(self, widget, data=None):
         self.syncswitch = widget.get_active()
         if self.syncswitch:
-            self.watcher.start_watching()
+            self.watcher.start_watching(self.username)
         else:
             self.watcher.pause_watching()
     def __init__(self):
@@ -188,7 +188,7 @@ def syncing(app):
                 exit(0)
             time.sleep(1)
         if app.syncswitch:
-            sync(app.get_sync_path())
+            sync(app.get_sync_path(), app.username)
 
 if __name__ == "__main__":
     application = Application()
