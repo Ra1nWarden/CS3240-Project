@@ -9,7 +9,7 @@ import time
 
 app = Flask(__name__)
 app.config.from_object('config')
-server_root = app.config['UPLOAD_FOLDER']
+server_root = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'server_folder/')
 db = SQLAlchemy(app)
 db.create_all()
 lm = LoginManager()
