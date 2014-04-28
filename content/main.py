@@ -1,4 +1,3 @@
-import pynotify
 import gtk
 import appindicator
 import thread
@@ -238,6 +237,7 @@ class Application:
             self.changepasswordi.show()
             self.login = True
             self.username = entered_username
+            self.watcher.set_username(self.username)
         else:
             self.errorMsg.show()
         return True
@@ -304,7 +304,7 @@ class Application:
 
 def syncing(app):
     while True:
-        for i in range(0, 60):
+        for i in range(0, 20):
             if not app.running:
                 exit(0)
             time.sleep(1)

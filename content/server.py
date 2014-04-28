@@ -1,5 +1,5 @@
 import os
-from flask import render_template, Flask, request, redirect, url_for, jsonify, send_file, g
+from flask import render_template, Flask, request, redirect, url_for, jsonify, send_file, g, make_response
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.admin.base import Admin

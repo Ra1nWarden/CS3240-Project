@@ -1,4 +1,5 @@
 import sys
+import pynotify
 import time
 import os
 from datetime import datetime
@@ -7,6 +8,8 @@ from watchdog.events import FileSystemEventHandler
 import requests
 
 address = "http://127.0.0.1:5000"
+
+pynotify.init('OneDir')
 
 class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -17,7 +20,7 @@ class MyHandler(FileSystemEventHandler):
         else:
             try:
                 uploadFile = {'file': open(event.src_path, 'rw')}
-                upload(uploadFile)
+                upload(uploadFile, self.username)
             except:
                 pass
 
@@ -30,7 +33,7 @@ class MyHandler(FileSystemEventHandler):
             filename = event.src_path.rsplit('/')[-1]
             try:
                 filerm = {'file': filename}
-                removeFile(filerm)
+                removeFile(filerm, self.username)
             except:
                 pass
 
@@ -42,7 +45,7 @@ class MyHandler(FileSystemEventHandler):
         else:
             try:
                 uploadFile = {'file': open(event.src_path, 'rw')}
-                upload(uploadFile)
+                upload(uploadFile, self.username)
             except:
                 pass
 
@@ -55,19 +58,37 @@ def upload(ufile, username):
     args = {}
     args['username'] = username
     r = requests.post(address + "/main", files=ufile, params=args)
+    print "in upload, status code is " + str(r.status_code)
+    filename_last = ufile['filename'].split('/')[-1]
+    if filename_last[0] != '.' and filename_last[-1] != '~':
+        n = pynotify.Notification('OneDir Notification', filename_last + " uploaded!")
+        n.set_urgency(pynotify.URGENCY_NORMAL)
+        n.show()
 
 def download(ufile, dir, username):
     ufile['username'] = username
     r = requests.get(address + "/main", params=ufile)
+    print "in download, status code is " + str(r.status_code)
     filename = r.headers['content-disposition'].rsplit('filename=')[-1]
     filename = "./" + dir + filename
     with open(filename, 'wb') as fw:
         for chunk in r.iter_content(128):
             fw.write(chunk)
+    filename_last = filename.split('/')[-1]
+    if filename_last[0] != '.' and filename_last[-1] != '~':
+        n = pynotify.Notification('OneDir Notification', filename_last + " downloaded!")
+        n.set_urgency(pynotify.URGENCY_NORMAL)
+        n.show()
     
 def removeFile(fname, username):
     fname['username'] = username
     r = requests.delete(address + "/main", params=fname)
+    print "in remove, status code is " + str(r.status_code)
+    filename_last = fname['file'].split('/')[-1]
+    if filename_last[0] != '.' and filename_last[-1] != '~':
+        n = pynotify.Notification('OneDir Notification', filename_last + " removed!")
+        n.set_urgency(pynotify.URGENCY_NORMAL)
+        n.show()
 
 def authenticate(username, password):
     arguments = {}
@@ -105,13 +126,15 @@ def sync(dir, username):
     tobedownload = r.json()["download"]
     for each in tobeupload:
         file_dir = "./" + dir + each
-        uploadFile = {'file': open(file_dir, 'rw')}
+        uploadFile = {'file': open(file_dir, 'rw'), 'filename': each}
         upload(uploadFile, username)
     for each in tobedownload:
         filedownload = {'file': each}
         download(filedownload, dir, username)
 
 class Watcher:
+    def set_username(self, username):
+        self.event_handler.username = username
     def __init__(self, dir):
         self.path = dir
         self.event_handler = MyHandler()
@@ -119,6 +142,7 @@ class Watcher:
         self.observer.schedule(self.event_handler, self.path, recursive=True)
     
     def start_watching(self, username):
+        self.set_username(username)
         sync(self.path, username)
         self.observer.start()
 
