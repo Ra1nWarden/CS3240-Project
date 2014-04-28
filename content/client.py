@@ -123,6 +123,7 @@ def sync(dir, username):
     r = requests.get(address + "/query", params=file_info)
     tobeupload = r.json()["upload"]
     tobedownload = r.json()["download"]
+    tobedelete = r.json()["delete"]
     for each in tobeupload:
         file_dir = "./" + dir + each
         uploadFile = {'file': open(file_dir, 'rw'), 'filename': each}
@@ -130,6 +131,9 @@ def sync(dir, username):
     for each in tobedownload:
         filedownload = {'file': each}
         download(filedownload, dir, username)
+    for each in tobedelete:
+        file_dir = "./" + dir + each
+        os.remove(file_dir)
 
 class Watcher:
     def set_username(self, username):

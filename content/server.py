@@ -126,23 +126,28 @@ def respond_requests():
         server_files = os.listdir(save_dir)
         uploadneed = []
         downloadneed = []
+        deleteneed = []
         for each in file_info:
             if each == 'username' or each == 'modified_at':
                 continue
             found_file = SavedFile.query.filter_by(username=username, filename=each).first()
             if found_file is None:
-                print "non upload"
                 uploadneed.append(each)
             else:
                 if found_file.user_upload(file_info[each]):
-                    print "compared upload"
                     uploadneed.append(each)
                 if found_file.user_download(file_info[each]):
                     downloadneed.append(each)
         for each in server_files:
             if not each in file_info:
                 downloadneed.append(each)
-        resp = jsonify(upload=uploadneed, download=downloadneed)
+        current_table = SavedFile.query.filter_by(username=username).all()
+        for each in current_table:
+            if each.is_deleted():
+                deleteneed.append(each.filename)
+                db.session.delete(each)
+        db.session.commit()
+        resp = jsonify(upload=uploadneed, download=downloadneed, delete=deleteneed)
         return resp
 
 @app.route('/register', methods=['POST'])
