@@ -195,5 +195,6 @@ if __name__ == '__main__':
     admin = Admin(app, 'OneDir')
     admin.add_view(sqla.ModelView(User, db.session))
     admin.add_view(sqla.ModelView(SavedFile, db.session))
-    app.debug = True
-    app.run()
+    # app.debug = True
+    # app.run()
+    app.run(host='0.0.0.0')

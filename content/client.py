@@ -31,11 +31,12 @@ class MyHandler(FileSystemEventHandler):
             print delete_time, event.event_type, event.src_path
         else:
             filename = event.src_path.rsplit('/')[-1]
-            try:
-                filerm = {'file': filename}
-                removeFile(filerm, self.username)
-            except:
-                pass
+            if filename[0] != '.' and filename[-1] != '~':
+                try:
+                    filerm = {'file': filename}
+                    removeFile(filerm, self.username)
+                except:
+                    pass
 
     def on_modified(self, event):
         modify_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
