@@ -60,6 +60,7 @@ def upload(ufile, username):
     filename_last = ufile['filename'].split('/')[-1]
     args['username'] = username
     args['modified_at'] = os.path.getmtime(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test_dir/' + ufile['filename']))
+    args['size'] = os.path.getsize(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test_dir/' + ufile['filename']))
     r = requests.post(address + "/main", files=ufile, params=args)
     if filename_last[0] != '.' and filename_last[-1] != '~':
         n = pynotify.Notification('OneDir Notification', filename_last + " uploaded!")

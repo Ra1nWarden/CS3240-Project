@@ -22,12 +22,14 @@ class SavedFile(db.Model):
     filename = db.Column('filename', db.String(20))
     modified_at = db.Column('modified_at', db.Float)
     admin_deleted = db.Column('admin_deleted', db.Boolean)
+    size = db.Column('size', db.Integer)
     
-    def __init__(self, username, filename, modified_at):
+    def __init__(self, username, filename, modified_at, size):
         self.username = username
         self.filename = filename
         self.modified_at = modified_at
         self.admin_deleted = False
+        self.size = size
 
     def is_deleted(self):
         return self.admin_deleted
@@ -94,7 +96,7 @@ def sync_file():
         filename = file.filename
         old_entry = SavedFile.query.filter_by(username=request.args['username'], filename=filename).first()
         if old_entry is None:
-            new_file = SavedFile(request.args['username'], filename, request.args['modified_at'])
+            new_file = SavedFile(request.args['username'], filename, request.args['modified_at'], request.args['size'])
             db.session.add(new_file)
         else:
             old_entry.modified_at = request.args['modified_at'] 
@@ -128,7 +130,7 @@ def respond_requests():
         downloadneed = []
         deleteneed = []
         for each in file_info:
-            if each == 'username' or each == 'modified_at':
+            if each == 'username':
                 continue
             found_file = SavedFile.query.filter_by(username=username, filename=each).first()
             if found_file is None:
@@ -196,5 +198,5 @@ if __name__ == '__main__':
     admin.add_view(sqla.ModelView(User, db.session))
     admin.add_view(sqla.ModelView(SavedFile, db.session))
     # app.debug = True
-    # app.run()
-    app.run(host='0.0.0.0')
+    app.run()
+    # app.run(host='0.0.0.0')
