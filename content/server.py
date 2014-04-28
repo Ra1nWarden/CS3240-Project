@@ -35,6 +35,12 @@ class SavedFile(db.Model):
     def get_id(self):
         return unicode(self.file_id)
 
+    def user_upload(self, compare_time):
+        return str(compare_time) > str(self.modified_at)
+
+    def user_download(self, compare_time):
+        return str(compare_time) < str(self.modified_at)
+
     def __repr__(self):
         return '<SavedFile %r>' % self.filename
 
@@ -86,22 +92,22 @@ def sync_file():
     if request.method == 'POST':
         file = request.files['file']
         filename = file.filename
-        new_file = SavedFile(request.args['username'], filename, request.args['modified_at'])
-        db.session.add(new_file)
+        old_entry = SavedFile.query.filter_by(username=request.args['username'], filename=filename).first()
+        if old_entry is None:
+            new_file = SavedFile(request.args['username'], filename, request.args['modified_at'])
+            db.session.add(new_file)
+        else:
+            old_entry.modified_at = request.args['modified_at'] 
         db.session.commit()
         save_dir = server_root + g.user.username + '/'
         file.save(os.path.join(save_dir, filename))
         return make_response()
     if request.method == 'DELETE':
         filename = request.args['file']
-        print "before filtering"
-        print str(filename)
-        print str(request.args['username'])
         old_entry = SavedFile.query.filter_by(username=str(request.args['username']), filename=str(filename)).first()
-        print old_entry
-        db.session.delete(old_entry)
-        db.session.commit()
-        print "after db"
+        if old_entry is not None:
+            db.session.delete(old_entry)
+            db.session.commit()
         save_dir = server_root + g.user.username + '/'
         os.remove(os.path.join(save_dir, filename))
         return make_response()
@@ -118,23 +124,22 @@ def respond_requests():
         username = file_info['username']
         save_dir = server_root + g.user.username + '/'
         server_files = os.listdir(save_dir)
-        server_info = {}
-        for each in server_files:
-            if each[0] != '.' and each[-1] != '~':
-                server_info[each] = os.path.getmtime(os.path.join(save_dir, each))
         uploadneed = []
         downloadneed = []
         for each in file_info:
             if each == 'username' or each == 'modified_at':
                 continue
-            if not each in server_info:
+            found_file = SavedFile.query.filter_by(username=username, filename=each).first()
+            if found_file is None:
+                print "non upload"
                 uploadneed.append(each)
             else:
-                if server_info[each] > file_info[each]:
-                    downloadneed.append(each)
-                else:
+                if found_file.user_upload(file_info[each]):
+                    print "compared upload"
                     uploadneed.append(each)
-        for each in server_info:
+                if found_file.user_download(file_info[each]):
+                    downloadneed.append(each)
+        for each in server_files:
             if not each in file_info:
                 downloadneed.append(each)
         resp = jsonify(upload=uploadneed, download=downloadneed)
