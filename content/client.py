@@ -56,10 +56,10 @@ class MyHandler(FileSystemEventHandler):
 
 def upload(ufile, username):
     args = {}
-    args['username'] = username
-    r = requests.post(address + "/main", files=ufile, params=args)
-    print "in upload, status code is " + str(r.status_code)
     filename_last = ufile['filename'].split('/')[-1]
+    args['username'] = username
+    args['modified_at'] = os.path.getmtime(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test_dir/' + ufile['filename']))
+    r = requests.post(address + "/main", files=ufile, params=args)
     if filename_last[0] != '.' and filename_last[-1] != '~':
         n = pynotify.Notification('OneDir Notification', filename_last + " uploaded!")
         n.set_urgency(pynotify.URGENCY_NORMAL)
@@ -68,7 +68,6 @@ def upload(ufile, username):
 def download(ufile, dir, username):
     ufile['username'] = username
     r = requests.get(address + "/main", params=ufile)
-    print "in download, status code is " + str(r.status_code)
     filename = r.headers['content-disposition'].rsplit('filename=')[-1]
     filename = "./" + dir + filename
     with open(filename, 'wb') as fw:
@@ -83,7 +82,6 @@ def download(ufile, dir, username):
 def removeFile(fname, username):
     fname['username'] = username
     r = requests.delete(address + "/main", params=fname)
-    print "in remove, status code is " + str(r.status_code)
     filename_last = fname['file'].split('/')[-1]
     if filename_last[0] != '.' and filename_last[-1] != '~':
         n = pynotify.Notification('OneDir Notification', filename_last + " removed!")
@@ -119,7 +117,8 @@ def sync(dir, username):
     fnames = os.listdir("./test_dir/")
     file_info = {}
     for each in fnames:
-        file_info[each] = os.path.getmtime(os.path.join("./test_dir/", each)) 
+        if each[0] != '.' and each[-1] != '~':
+            file_info[each] = os.path.getmtime(os.path.join("./test_dir/", each)) 
     file_info['username'] = username
     r = requests.get(address + "/query", params=file_info)
     tobeupload = r.json()["upload"]

@@ -5,30 +5,38 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.admin.base import Admin
 from flask.ext.admin.contrib import sqla
 from datetime import datetime
+import time
 
 app = Flask(__name__)
 app.config.from_object('config')
 server_root = app.config['UPLOAD_FOLDER']
 db = SQLAlchemy(app)
+db.create_all()
 lm = LoginManager()
 lm.init_app(app)
 
-# class SavedFile(db.Model):
-#     __tablename__ = "files"
-#     id = db.Column('file_id', db.Integer, primary_key=True)
-#     username = db.Column('username', db.String(20), index=True)
-#     filename = db.Column('filename', db.String(40))
-#     created_at = db.Column('created_at', db.DateTime)
-#     admin_deleted = db.Column('admin_deleted', db.Boolean)
+class SavedFile(db.Model):
+    __tablename__ = "files"
+    file_id = db.Column('file_id', db.Integer, primary_key=True)
+    username = db.Column('username', db.String(20), index=True)
+    filename = db.Column('filename', db.String(20))
+    modified_at = db.Column('modified_at', db.Float)
+    admin_deleted = db.Column('admin_deleted', db.Boolean)
     
-#     def __init__(self, username, filename, created_at):
-#         self.username = username
-#         self.filename = filename
-#         self.created_at = created_at
-#         self.admin_deleted = False
+    def __init__(self, username, filename, modified_at):
+        self.username = username
+        self.filename = filename
+        self.modified_at = modified_at
+        self.admin_deleted = False
 
-#     def is_deleted(self):
-#         return self.admin_deleted
+    def is_deleted(self):
+        return self.admin_deleted
+    
+    def get_id(self):
+        return unicode(self.file_id)
+
+    def __repr__(self):
+        return '<SavedFile %r>' % self.filename
 
 class User(db.Model):
     __tablename__ = "users"
@@ -78,11 +86,22 @@ def sync_file():
     if request.method == 'POST':
         file = request.files['file']
         filename = file.filename
+        new_file = SavedFile(request.args['username'], filename, request.args['modified_at'])
+        db.session.add(new_file)
+        db.session.commit()
         save_dir = server_root + g.user.username + '/'
         file.save(os.path.join(save_dir, filename))
         return make_response()
     if request.method == 'DELETE':
         filename = request.args['file']
+        print "before filtering"
+        print str(filename)
+        print str(request.args['username'])
+        old_entry = SavedFile.query.filter_by(username=str(request.args['username']), filename=str(filename)).first()
+        print old_entry
+        db.session.delete(old_entry)
+        db.session.commit()
+        print "after db"
         save_dir = server_root + g.user.username + '/'
         os.remove(os.path.join(save_dir, filename))
         return make_response()
@@ -101,11 +120,12 @@ def respond_requests():
         server_files = os.listdir(save_dir)
         server_info = {}
         for each in server_files:
-            server_info[each] = os.path.getmtime(os.path.join(save_dir, each))
+            if each[0] != '.' and each[-1] != '~':
+                server_info[each] = os.path.getmtime(os.path.join(save_dir, each))
         uploadneed = []
         downloadneed = []
         for each in file_info:
-            if each == 'username':
+            if each == 'username' or each == 'modified_at':
                 continue
             if not each in server_info:
                 uploadneed.append(each)
@@ -145,7 +165,6 @@ def changepassword():
 
 @app.route('/login', methods=['POST'])
 def login():
-    print "here at login"
     username = request.args['username']
     password = request.args['password']
     registered_user = User.query.filter_by(username=username, password=password).first()
@@ -158,7 +177,6 @@ def login():
 
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
-    print "here at log out user"
     #logout_user()
     resp = jsonify(success=True)
     return resp
@@ -166,5 +184,6 @@ def logout():
 if __name__ == '__main__':
     admin = Admin(app, 'OneDir')
     admin.add_view(sqla.ModelView(User, db.session))
-    #admin.add_view(sqla.ModelView(SavedFile, db.session))
+    admin.add_view(sqla.ModelView(SavedFile, db.session))
+    app.debug = True
     app.run()
