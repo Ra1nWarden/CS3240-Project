@@ -83,6 +83,13 @@ def register_user(username, password):
     r = requests.post(address + "/register", params=arguments)
     return r.json()['success']
 
+def change_password(username, password):
+    arguments = {}
+    arguments['username'] = username
+    arguments['password'] = password
+    r = requests.post(address + "/change_password", params=arguments)
+    return r.json()['success']
+
 def log_out():
     r = requests.post(address + "/logout")
     return r.status_code == 200
