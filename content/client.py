@@ -85,6 +85,7 @@ def register_user(username, password):
 
 def log_out():
     r = requests.post(address + "/logout")
+    return r.status_code == 200
 
 def sync(dir, username):
     fnames = os.listdir("./test_dir/")

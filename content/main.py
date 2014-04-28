@@ -4,6 +4,7 @@ import appindicator
 import thread
 import threading
 import time
+import webbrowser
 from client import Watcher
 from client import sync, register_user, authenticate, log_out
 
@@ -125,11 +126,13 @@ class Application:
     def log_out(self, widget, data=None):
         self.logini.show()
         self.switchi.hide()
+        self.admini.hide()
         self.logouti.hide()
         self.login = False
         self.username = None
         self.switchi.set_active(False)
         self.syncswitch = self.switchi.get_active()
+        log_out()
     def get_sync_path(self):
         return self.watcher.path
     def check_info(self, widget, data=None):
@@ -138,7 +141,10 @@ class Application:
         if self.check_match(entered_username, entered_password):
             self.logini.hide()
             self.logouti.show()
-            self.switchi.show()
+            if entered_username == 'admin':
+                self.admini.show()
+            else:
+                self.switchi.show()
             self.login = True
             self.username = entered_username
         else:
@@ -153,6 +159,8 @@ class Application:
             self.watcher.start_watching(self.username)
         else:
             self.watcher.pause_watching()
+    def admin_page(self, widget, data=None):
+        webbrowser.open('http://127.0.0.1:5000/template/index.html')
     def __init__(self):
         self.indicator = appindicator.Indicator('oneDir', '/home/zihao/Dropbox/Documents/UVa/Spring 2014/CS 3240/CS3240-Project/content/icons/icon.ico', appindicator.CATEGORY_APPLICATION_STATUS)
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
@@ -166,8 +174,11 @@ class Application:
         self.logini.connect('activate', self.login_pop)
         self.logouti = gtk.MenuItem('Log out')
         self.logouti.connect('activate', self.log_out)
+        self.admini = gtk.MenuItem('Admin')
+        self.admini.connect('activate', self.admin_page)
         self.mainMenu.append(self.switchi)
         self.mainMenu.append(self.logini)
+        self.mainMenu.append(self.admini)
         self.mainMenu.append(self.logouti)
         self.mainMenu.append(self.quiti)
         self.popwindow = LoginWindow()

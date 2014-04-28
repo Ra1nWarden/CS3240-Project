@@ -1,7 +1,9 @@
 import os
-from flask import Flask, request, redirect, url_for, jsonify, send_file, g
+from flask import render_template, Flask, request, redirect, url_for, jsonify, send_file, g
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.admin.base import Admin
+from flask.ext.admin.contrib import sqla
 from datetime import datetime
 
 app = Flask(__name__)
@@ -44,8 +46,15 @@ def load_user(id):
 
 @lm.request_loader
 def load_user_from_request(req):
-    username = req.args['username']
-    return User.query.filter_by(username=username).first()
+    print "here in load user from request"
+    if 'username' in req.args:
+        print "here in if"
+        username = req.args['username']
+        return User.query.filter_by(username=username).first()
+    else:
+        print "here in else"
+        return User.query.filter_by(username='admin').first()
+        
 
 @app.before_request
 def before_request():
@@ -57,6 +66,8 @@ def sync_file():
         file = request.files['file']
         filename = file.filename
         save_dir = server_root + g.user.username + '/'
+        print "printing save_dir"
+        print save_dir
         file.save(os.path.join(save_dir, filename))
         return make_response()
     if request.method == 'DELETE':
@@ -115,6 +126,7 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
+    print "here at login"
     username = request.args['username']
     password = request.args['password']
     registered_user = User.query.filter_by(username=username, password=password).first()
@@ -125,12 +137,14 @@ def login():
     resp = jsonify(success=True)
     return resp
 
-@app.route('/logout')
-@login_required
+@app.route('/logout', methods=['POST', 'GET'])
 def logout():
-    logout_user()
+    print "here at log out user"
+    #logout_user()
     resp = jsonify(success=True)
     return resp
 
 if __name__ == '__main__':
+    admin = Admin(app, 'OneDir')
+    admin.add_view(sqla.ModelView(User, db.session))
     app.run()
